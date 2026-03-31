@@ -26,21 +26,12 @@ A fun, browser-based Easter egg hunt game. Set up prizes and poems, hand out num
 - Use **Save results to spreadsheet** to export a `.xlsx` summary.
 
 ## Features
-
-- Fully offline — runs as a single HTML file with no server needed
 - 42 built-in Easter-themed joke poems that cycle through automatically
 - Multi-player support with instant player switching
 - Cash prize aggregation (any prize name containing `$`)
 - Trophy indicators for category leaders (ties included)
 - Export to Excel spreadsheet
 - Easter color scheme 🌸
-
-## Hosting on GitHub Pages
-
-1. Rename the file to `index.html`
-2. Push to a GitHub repository
-3. Go to **Settings → Pages** and set the source to your main branch
-4. Your game will be live at `https://yourusername.github.io/repo-name`
 
 ## License
 
