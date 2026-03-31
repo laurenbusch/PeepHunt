@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Easter Peep Hunt</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fdf0fa;
+    --surface: #fae6f7;
+    --surface2: #f5d8f0;
+    --border: #e8b8e0;
+    --border2: #d49ccc;
+    --text: #2d1040;
+    --text2: #7a4080;
+    --text3: #a870b8;
+    --accent: #cc44aa;
+    --accent-light: #fce8f6;
+    --accent-dark: #991188;
+    --green: #3a9a50;
+    --green-light: #d8f5e0;
+    --red: #cc3366;
+    --red-light: #fce8f0;
+    --purple: #7744cc;
+    --purple-light: #ede8ff;
+    --pink: #e84899;
+    --pink-light: #ffe0f0;
+    --blue: #3366cc;
+    --blue-light: #dde8ff;
+    --yellow: #e8c820;
+    --yellow-light: #fffacc;
+    --lavender: #c8a8ee;
+    --mint: #a8e8c0;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow: 0 2px 12px rgba(150,50,150,0.12);
+    --shadow-lg: 0 6px 32px rgba(150,50,150,0.20);
+  }
+
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: linear-gradient(160deg, #fce8fa 0%, #e8f0ff 40%, #e8faf0 100%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .app { width: 100%; max-width: 580px; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .app-header { text-align: center; margin-bottom: 2rem; }
+  .app-header .peep-icon { font-size: 40px; display: block; margin-bottom: 0.5rem; }
+  .app-header h1 { font-size: 28px; font-weight: 700; color: var(--purple); letter-spacing: -0.3px; margin-bottom: 0.25rem; }
+  .app-header p { font-size: 14px; color: var(--text2); font-style: italic; }
+
+  .card { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.25rem; }
+  .card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text3); margin-bottom: 1rem; font-family: Arial, sans-serif; }
+
+  label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 5px; font-family: Arial, sans-serif; }
+  input[type=text], input[type=number], input[type=password] {
+    width: 100%; padding: 9px 13px; border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 15px; color: var(--text); background: var(--bg); font-family: Arial, sans-serif;
+    transition: border-color 0.15s, box-shadow 0.15s; outline: none;
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  .field { margin-bottom: 1rem; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+
+  button { font-family: Arial, sans-serif; cursor: pointer; border-radius: var(--radius); font-size: 14px; transition: all 0.15s; border: 1px solid var(--border2); background: white; color: var(--text); padding: 9px 18px; }
+  button:hover { background: var(--surface2); }
+  button:active { transform: scale(0.98); }
+  .btn-primary { background: var(--purple); color: white; border-color: #5533aa; font-weight: 700; }
+  .btn-primary:hover { background: #5533aa; }
+  .btn-danger { border-color: var(--red); color: var(--red); }
+  .btn-danger:hover { background: var(--red-light); }
+  .btn-success { background: var(--green); color: white; border-color: #2a7a3a; font-weight: 700; }
+  .btn-success:hover { background: #2a7a3a; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
+  .btn-sm { padding: 5px 12px; font-size: 13px; }
+
+  /* Prize entry table */
+  .prize-table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; }
+  .prize-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text3); font-weight: 700; padding: 0 8px 8px; text-align: left; }
+  .prize-table th:first-child { width: 80px; }
+  .prize-table th:last-child { width: 36px; }
+  .prize-table td { padding: 3px 4px; vertical-align: middle; }
+  .prize-table input[type=number] { text-align: center; padding: 7px 6px; font-size: 14px; }
+  .prize-table input[type=text] { padding: 7px 10px; font-size: 14px; }
+  .prize-table .remove-btn { background: none; border: none; color: var(--text3); font-size: 18px; line-height: 1; padding: 4px 8px; cursor: pointer; }
+  .prize-table .remove-btn:hover { color: var(--red); background: none; }
+
+  /* Counter bar */
+  .counter-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; margin-bottom: 1rem;
+    font-family: Arial, sans-serif; font-size: 13px;
+  }
+  .counter-bar .count-label { color: var(--text2); }
+  .counter-bar .count-nums { font-weight: 700; font-size: 15px; }
+  .counter-bar .count-nums.over { color: var(--red); }
+  .counter-bar .count-nums.ok { color: var(--green); }
+  .counter-bar .count-nums.neutral { color: var(--text); }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.2s, background 0.2s; }
+  .progress-fill.over { background: var(--red); }
+  .progress-fill.ok { background: var(--green); }
+
+  /* Poem toggle */
+  .poem-toggle { display: flex; align-items: center; gap: 10px; font-family: Arial, sans-serif; font-size: 14px; color: var(--text2); cursor: pointer; margin-top: 0.75rem; }
+  .poem-toggle input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
+
+  .error { color: var(--red); font-size: 13px; margin-top: 0.5rem; font-family: Arial, sans-serif; }
+
+  /* Game screen */
+  .game-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+  .game-header h2 { font-size: 22px; color: var(--purple); }
+  .remaining { font-size: 13px; color: var(--text3); font-family: Arial, sans-serif; margin-top: 2px; }
+  .player-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px 6px 8px; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-family: Arial, sans-serif; }
+  .player-dot { width: 28px; height: 28px; border-radius: 50%; background: var(--pink); color: white; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: Arial, sans-serif; flex-shrink: 0; }
+  .player-name { font-weight: 700; color: var(--text); }
+  .number-entry { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 0.5rem; }
+  .number-entry input { max-width: 140px; font-size: 22px; text-align: center; margin-bottom: 0; padding: 10px; font-weight: 700; }
+
+  /* Prize reveal */
+  .prize-reveal {
+    border-radius: var(--radius-lg); padding: 2rem; text-align: center;
+    margin: 1.5rem 0; border: 1px solid var(--border); background: white;
+    box-shadow: var(--shadow-lg); opacity: 0; transform: translateY(16px) scale(0.97);
+    animation: revealIn 0.45s cubic-bezier(0.22, 0.9, 0.36, 1) forwards;
+  }
+  @keyframes revealIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+  .big-num { font-size: 52px; font-weight: 700; color: var(--purple); line-height: 1; margin-bottom: 0.5rem; display: block; }
+  .reveal-label { font-size: 12px; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 0.75rem; }
+  .prize-text { font-size: 20px; font-weight: 700; color: var(--text); }
+  .no-prize-text { font-size: 16px; color: var(--text3); font-style: italic; font-family: Arial, sans-serif; }
+
+  /* Poem reveal */
+  .poem-reveal {
+    background: linear-gradient(135deg, #fce8fa 0%, #e8f0ff 50%, #e8faf0 100%);
+    border: 1px solid #d4a8e8; border-radius: var(--radius-lg);
+    padding: 2.5rem 2rem; text-align: center; margin: 1.5rem 0;
+    position: relative; overflow: hidden; box-shadow: var(--shadow-lg);
+    opacity: 0; animation: revealIn 0.45s cubic-bezier(0.22, 0.9, 0.36, 1) forwards;
+  }
+  .poem-sparkles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .sparkle { position: absolute; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: sparkleFloat 2s ease-out forwards; opacity: 0; }
+  @keyframes sparkleFloat {
+    0% { opacity: 0; transform: translateY(0) scale(0); }
+    20% { opacity: 1; transform: translateY(-20px) scale(1); }
+    100% { opacity: 0; transform: translateY(-80px) scale(0.3); }
+  }
+  .poem-crown { font-size: 32px; display: block; margin-bottom: 0.75rem; animation: crownPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both; }
+  @keyframes crownPop { from { transform: scale(0) rotate(-15deg); opacity: 0; } to { transform: scale(1) rotate(0deg); opacity: 1; } }
+  .poem-badge { display: inline-block; font-size: 11px; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700; color: var(--purple); background: var(--purple-light); padding: 4px 14px; border-radius: 999px; margin-bottom: 1.25rem; border: 1px solid #c4a0e8; }
+  .poem-peep-num { font-size: 44px; font-weight: 700; color: var(--purple); display: block; line-height: 1; margin-bottom: 1.5rem; animation: numSlide 0.4s cubic-bezier(0.22, 0.9, 0.36, 1) 0.15s both; opacity: 0; }
+  @keyframes numSlide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .poem-text { font-size: 17px; line-height: 2; color: var(--text); font-style: italic; }
+  .poem-line { display: block; opacity: 0; animation: lineAppear 0.5s ease forwards; }
+  @keyframes lineAppear { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+  .poem-divider { width: 48px; height: 2px; background: var(--border2); margin: 1.25rem auto; border-radius: 999px; }
+
+  /* Summary */
+  .winner-block { margin-bottom: 1.75rem; }
+  .winner-block-name { font-size: 17px; font-weight: 700; color: var(--purple); margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border); }
+  .winner-prizes { font-size: 15px; color: var(--text); margin-bottom: 0.75rem; line-height: 1.6; font-family: Arial, sans-serif; }
+  .winner-poem { margin-top: 0.75rem; background: var(--purple-light); border: 1px solid #d4b8f0; border-radius: var(--radius); padding: 0.75rem 1rem; }
+  .winner-poem-label { font-size: 11px; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.8px; color: var(--purple); font-weight: 700; margin-bottom: 0.4rem; }
+  .winner-poem-text { font-size: 14px; font-style: italic; color: var(--text); white-space: pre-wrap; line-height: 1.8; }
+  .winner-poem-num { font-size: 11px; color: var(--text3); font-family: Arial, sans-serif; margin-top: 4px; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(30,20,10,0.45); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; animation: fadeIn 0.15s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal { background: white; border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 1.75rem; width: 100%; max-width: 320px; box-shadow: var(--shadow-lg); animation: modalPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes modalPop { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal h3 { font-size: 17px; margin-bottom: 0.75rem; color: var(--text); }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* Summary columns */
+  .summary-grid { display: grid; gap: 10px; margin-bottom: 1.5rem; align-items: start; }
+  .summary-col { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 0.875rem; box-shadow: var(--shadow); min-width: 0; }
+  .summary-col-name { font-size: 15px; font-weight: 700; color: var(--purple); margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .summary-stat { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 4px 0; font-family: Arial, sans-serif; font-size: 13px; border-bottom: 1px solid var(--surface2); }
+  .summary-stat:last-of-type { border-bottom: none; }
+  .summary-stat-label { color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; }
+  .summary-stat-value { font-weight: 700; color: var(--text); white-space: nowrap; flex-shrink: 0; }
+  .summary-stat.zero .summary-stat-value { color: var(--text3); font-weight: 400; }
+  .summary-stat.cash-row .summary-stat-label { color: var(--green); font-weight: 700; }
+  .summary-stat.poem-row .summary-stat-label { color: var(--purple); font-style: italic; }
+
+  /* Player picker in name modal */
+  .player-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem; }
+  .player-pick-btn { background: var(--purple-light); border: 1.5px solid var(--lavender); color: var(--purple); font-weight: 700; border-radius: 999px; padding: 6px 16px; font-size: 14px; font-family: Arial, sans-serif; cursor: pointer; transition: all 0.15s; }
+  .player-pick-btn:hover { background: var(--purple); color: white; border-color: var(--purple); }
+  .player-pick-btn.active { background: var(--purple); color: white; border-color: var(--purple); }
+  .player-divider { display: flex; align-items: center; gap: 10px; margin: 0.75rem 0; font-size: 12px; color: var(--text3); font-family: Arial, sans-serif; }
+  .player-divider::before, .player-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ═══════════════════════════════════════════
+       SETUP SCREEN
+  ═══════════════════════════════════════════ -->
+  <div class="screen active" id="setup-screen">
+    <div class="app-header">
+      <span class="peep-icon">🐣</span>
+      <h1>Easter Peep Hunt</h1>
+      <p>Set up your hunt, then let the games begin!</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Game settings</div>
+      <div class="field">
+        <label>Total peep numbers</label>
+        <input type="number" id="total-peeps" value="100" min="1" max="500" oninput="updateCounter()">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Prizes</div>
+
+      <div class="counter-bar" id="counter-bar">
+        <div>
+          <div class="count-label">Prizes entered</div>
+          <div class="progress-bar" style="width:180px;margin-top:6px;"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        </div>
+        <div class="count-nums neutral" id="counter-nums">0 / 100</div>
+      </div>
+
+      <table class="prize-table">
+        <thead>
+          <tr>
+            <th>Quantity</th>
+            <th>Prize name</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="prize-rows"></tbody>
+      </table>
+      <div style="margin-top:8px;display:flex;gap:8px;">
+        <button class="btn-sm" onclick="addPrizeRow()">+ Add prize</button>
+        <button class="btn-sm btn-danger" onclick="clearPrizes()">Clear prizes</button>
+      </div>
+
+      <label class="poem-toggle" style="margin-top:1rem;">
+        <input type="checkbox" id="fill-poems-check" onchange="updateCounter()">
+        Fill remaining peep numbers with poems
+      </label>
+      <div id="poem-fill-info" style="display:none;margin-top:6px;font-size:12px;color:var(--purple);font-family:Arial,sans-serif;"></div>
+
+    </div>
+
+    <div id="setup-error" class="error" style="margin-bottom:1rem;"></div>
+    <button class="btn-primary" onclick="beginGame()" style="width:100%;padding:13px;">Begin game 🐣</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       GAME SCREEN
+  ═══════════════════════════════════════════ -->
+  <div class="screen" id="game-screen">
+    <div class="game-header">
+      <div>
+        <h2>Find your peep!</h2>
+        <div class="remaining" id="remaining-count"></div>
+      </div>
+      <button class="btn-danger btn-sm" onclick="showExitModal()">Exit game</button>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <div class="player-bar" id="player-bar">
+        <div class="player-dot" id="player-dot">?</div>
+        <span class="player-name" id="player-name-display">No player set</span>
+      </div>
+      <button class="btn-sm" onclick="showNameModal(false)">Change player</button>
+    </div>
+
+    <div class="card" style="padding:1.25rem;">
+      <label>Enter peep number</label>
+      <div class="number-entry">
+        <input type="number" id="peep-input" placeholder="#" min="1" onkeydown="if(event.key==='Enter')claimPeep()">
+        <button class="btn-primary" onclick="claimPeep()" style="padding:10px 22px;font-size:15px;">Enter</button>
+      </div>
+      <div id="game-error" class="error"></div>
+    </div>
+
+    <div id="prize-result"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SUMMARY SCREEN
+  ═══════════════════════════════════════════ -->
+  <div class="screen" id="summary-screen">
+    <div class="app-header" style="margin-bottom:1.5rem;">
+      <span class="peep-icon">🏆</span>
+      <h1>Hunt Results</h1>
+    </div>
+    <div id="summary-content"></div>
+    <div class="btn-row">
+      <button class="btn-success" onclick="saveToSpreadsheet()">Save results to spreadsheet 📊</button>
+      <button onclick="showResetModal()">Reset game</button>
+    </div>
+    <div id="save-status" style="margin-top:0.75rem;font-family:Arial,sans-serif;font-size:13px;"></div>
+  </div>
+
+  <div id="modal-container"></div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// POEMS — edit these directly in the file.
+// Separate each poem with a blank line.
+// ════════════════════════════════════════════════
+const POEM_TEXT = `Roses are pink,
+grass is green,
+this poem means
+no jelly beans.
+
+No candy here.
+No dollar bills.
+Just this poem
+and reading skills.
+
+An egg of dreams,
+an egg of hope,
+instead you got
+a rhyming nope.
+
+The bunny laughed,
+the bunny fled,
+he left this poem
+inside instead.
+
+You wanted money,
+you wanted gold,
+instead, a poem,
+that's getting old.
+
+A Switch 2 awaits
+in some other egg.
+This one says
+better luck, Greg.
+
+No gaming laptop,
+no candy stash,
+just tiny paper
+instead of cash.
+
+Egg hunt status:
+critical fail.
+Prize replaced
+with bunny mail.
+
+Your prize was meant
+to change your life.
+Now it's just words
+and egg hunt strife.
+
+Haiku of sadness:
+I reached into the bright egg
+Only paper laughed
+
+I wished for a car.
+A Jeep, maybe.
+Instead I got
+this egg note, baby.
+
+No gummy worms,
+no chocolate bar,
+this poem says
+you didn't win a car.
+
+A bunny with taste
+wrote you this art.
+He knew full well
+it would break your heart.
+
+No soda, no sweets,
+no five-dollar bill.
+Just bunny satire
+and poetic skill.
+
+This prize once held
+a hundred bucks.
+Then the bunny said,
+"nah, good luck."
+
+A poem prize
+builds character fast.
+Sadly for you,
+cash would last.
+
+You hoped for Skittles.
+You hoped for loot.
+Instead you got verse.
+Oh boy, how cute.
+
+The bunny checked
+your long wish list.
+Then chose chaos.
+Classic twist.
+
+No AirPods here,
+no candy rope.
+Just folded-up
+artisanal nope.
+
+This egg says:
+dream big, aim high,
+still no money though,
+nice try.
+
+You sought sugar.
+You sought treasure.
+Instead got words
+with zero pleasure.
+
+No car keys here,
+no giant check,
+just bunny humor
+with no respect.
+
+You almost won
+a gaming chair.
+Then fate said,
+"nah, poem's fair."
+
+No prize card.
+No gift card spree.
+Just a poem
+and irony.
+
+The Easter Bunny
+saw your dreams.
+Then gave you nonsense
+instead of jelly beans.
+
+No hundred-dollar egg,
+no chocolate stack,
+just bunny jokes
+talking smack.
+
+A car? absurd.
+Cash? too much.
+Here's a poem.
+But please don't touch.
+
+This egg says congrats,
+you've won a rhyme.
+Monetary value:
+negative nine.
+
+There once was a teen full of hope
+Whose Easter hunt prize just said "nope."
+No candy, no cash,
+No chocolate stash,
+Just a poem to help them cope.
+
+A gamer went hunting at dawn,
+For prizes to flex and respawn.
+But deep in the grass
+No treasure, no cash,
+Just rhyme that kept endlessly going on.
+
+You've just thought, "This prize is the one!
+A laptop! A jackpot! I've won!"
+But under the lid
+The bunny just hid
+A poem and then called it fun.
+
+There once was a kid seeking gold,
+Or maybe some candy to hold.
+Instead they got verse
+Which frankly felt worse
+Than socks in an Easter egg mold.
+
+A teen wanted cash by the stack,
+Enough for some games and a snack.
+But the bunny, that clown,
+Had clearly doubled down
+On pranks in a poetic attack.
+
+There once was an egg full of lies,
+Disguised as a top-tier surprise.
+No dollars, no loot,
+No new gaming suit,
+Just poetry dressed up as prize.
+
+This bright plastic prize
+promised riches beyond dreams
+now I own a rhyme
+
+I shook it for cash
+heard only the sound of doom
+Easter troll won
+
+No candy this time
+just three lines and your crushed dreams
+the bunny escaped
+
+I wanted five bucks
+or maybe a chocolate bar
+instead words stared back
+
+A Switch 2 somewhere
+waits for a lucky looker
+I got punctuation
+
+I reached in with hope
+the bunny invested poorly
+my returns are verse
+
+This egg looked so full
+turns out disappointment weighs
+less than jelly beans
+
+There once was your grand winning chance,
+Maybe a car or a console perchance!
+But luck took a dip,
+No cash in your grip,
+Just a limerick asking you to dance.`;
+
+// ════════════════════════════════════════════════
+// Parse poems from the text block above
+// ════════════════════════════════════════════════
+const POEMS = POEM_TEXT.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 0);
+
+// ════════════════════════════════════════════════
+// State
+// ════════════════════════════════════════════════
+let state = {
+  totalPeeps: 100,
+  prizeMap: {},
+  claimed: {},
+  winners: {},
+  currentWinner: '',
+  prizeCategories: [],
+  hasPoems: false
+};
+
+// ════════════════════════════════════════════════
+// Helpers
+// ════════════════════════════════════════════════
+function el(id) { return document.getElementById(id); }
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); el(id).classList.add('active'); }
+
+// ════════════════════════════════════════════════
+// Prize row management
+// ════════════════════════════════════════════════
+let rowId = 0;
+function addPrizeRow(qty='', name='') {
+  let id = ++rowId;
+  let tr = document.createElement('tr');
+  tr.id = 'prize-row-' + id;
+  tr.innerHTML = `
+    <td><input type="number" min="1" max="500" value="${qty}" placeholder="0" oninput="updateCounter()" style="width:70px;"></td>
+    <td><input type="text" value="${name}" placeholder="e.g. $2 bill" oninput="updateCounter()"></td>
+    <td><button class="remove-btn" onclick="el('prize-row-${id}').remove();updateCounter()">&#x2715;</button></td>`;
+  el('prize-rows').appendChild(tr);
+  updateCounter();
+}
+
+function getPrizeRows() {
+  let rows = el('prize-rows').querySelectorAll('tr');
+  let out = [];
+  for (let r of rows) {
+    let qty = parseInt(r.cells[0].querySelector('input').value) || 0;
+    let name = r.cells[1].querySelector('input').value.trim();
+    if (qty > 0 && name) out.push({qty, name});
+  }
+  return out;
+}
+
+function getTotalPrizeCount() {
+  return getPrizeRows().reduce((sum, r) => sum + r.qty, 0);
+}
+
+function updateCounter() {
+  let total = parseInt(el('total-peeps').value) || 0;
+  let used = getTotalPrizeCount();
+  let fillPoems = el('fill-poems-check').checked;
+  let remaining = total - used;
+
+  let numsEl = el('counter-nums');
+  let fillEl = el('progress-fill');
+  let infoEl = el('poem-fill-info');
+  let pct = total > 0 ? Math.min((used / total) * 100, 100) : 0;
+
+  fillEl.style.width = pct + '%';
+
+  if (used > total) {
+    numsEl.textContent = `${used} / ${total} — ${used - total} too many`;
+    numsEl.className = 'count-nums over';
+    fillEl.className = 'progress-fill over';
+  } else if (fillPoems || used === total) {
+    numsEl.textContent = `${used} / ${total}`;
+    numsEl.className = 'count-nums ok';
+    fillEl.className = 'progress-fill ok';
+  } else {
+    numsEl.textContent = `${used} / ${total} — ${remaining} open`;
+    numsEl.className = 'count-nums neutral';
+    fillEl.className = 'progress-fill';
+  }
+
+  if (fillPoems && remaining > 0) {
+    let cycles = Math.ceil(remaining / POEMS.length);
+    infoEl.style.display = 'block';
+    infoEl.textContent = `${remaining} slot${remaining !== 1 ? 's' : ''} will be filled with poems (${POEMS.length} poem${POEMS.length !== 1 ? 's' : ''} available, cycling ${cycles > 1 ? cycles + 'x' : 'once'}).`;
+  } else {
+    infoEl.style.display = 'none';
+  }
+}
+
+// ════════════════════════════════════════════════
+// Begin game — build prize map
+// ════════════════════════════════════════════════
+function beginGame() {
+  let errEl = el('setup-error');
+  errEl.textContent = '';
+
+  let total = parseInt(el('total-peeps').value) || 0;
+  if (total < 1) { errEl.textContent = 'Total peep numbers must be at least 1.'; return; }
+
+  let prizeRows = getPrizeRows();
+  let totalPrizes = prizeRows.reduce((s, r) => s + r.qty, 0);
+  let fillPoems = el('fill-poems-check').checked;
+
+  if (prizeRows.length === 0 && !fillPoems) { errEl.textContent = 'Add at least one prize, or check "fill remaining with poems".'; return; }
+  if (totalPrizes > total) { errEl.textContent = `Too many prizes (${totalPrizes}) for ${total} peep numbers. Reduce quantities or increase total peeps.`; return; }
+
+  // Build flat prize list
+  let prizeList = [];
+  for (let r of prizeRows) {
+    for (let i = 0; i < r.qty; i++) prizeList.push({type: 'prize', desc: r.name});
+  }
+
+  // Fill remaining with poems (cycle through POEMS list)
+  if (fillPoems) {
+    let remaining = total - prizeList.length;
+    for (let i = 0; i < remaining; i++) {
+      prizeList.push({type: 'poem', desc: POEMS[i % POEMS.length]});
+    }
+  }
+
+  // Shuffle and assign to numbers
+  let nums = Array.from({length: total}, (_, i) => i + 1);
+  nums.sort(() => Math.random() - 0.5);
+  prizeList.sort(() => Math.random() - 0.5);
+
+  state.totalPeeps = total;
+  state.prizeMap = {};
+  state.claimed = {};
+  state.winners = {};
+  state.currentWinner = '';
+
+  // Build prize categories in display order: cash first, non-cash in entry order, poems last
+  let hasCash = prizeRows.some(r => /\$/.test(r.name));
+  let seen = new Set();
+  let orderedNonCash = [];
+  for (let r of prizeRows) {
+    if (!/\$/.test(r.name) && !seen.has(r.name)) { seen.add(r.name); orderedNonCash.push(r.name); }
+  }
+  state.prizeCategories = [];
+  if (hasCash) state.prizeCategories.push({ type: 'cash' });
+  for (let desc of orderedNonCash) state.prizeCategories.push({ type: 'prize', desc });
+  state.hasPoems = fillPoems;
+
+  nums.forEach((n, i) => {
+    state.prizeMap[n] = prizeList[i] || null;
+  });
+
+  el('peep-input').max = total;
+  updateRemaining();
+  showScreen('game-screen');
+  showNameModal(true);
+}
+
+// ════════════════════════════════════════════════
+// Game
+// ════════════════════════════════════════════════
+function updateRemaining() {
+  let used = Object.keys(state.claimed).length;
+  el('remaining-count').textContent = `${state.totalPeeps - used} of ${state.totalPeeps} peeps remaining`;
+}
+
+function claimPeep() {
+  let errEl = el('game-error');
+  errEl.textContent = '';
+  if (!state.currentWinner) { errEl.textContent = 'Set a player name first.'; return; }
+  let num = parseInt(el('peep-input').value);
+  if (!num || num < 1 || num > state.totalPeeps) { errEl.textContent = `Enter a number between 1 and ${state.totalPeeps}.`; return; }
+  if (state.claimed[num]) { errEl.textContent = `Peep #${num} was already found by ${state.claimed[num]}!`; return; }
+
+  state.claimed[num] = state.currentWinner;
+  let prize = state.prizeMap[num] || null;
+  state.winners[state.currentWinner].push({num, prize});
+  el('peep-input').value = '';
+  updateRemaining();
+  renderPrizeResult(num, prize);
+}
+
+function renderPrizeResult(num, prize) {
+  let div = el('prize-result');
+  if (!prize) {
+    div.innerHTML = `<div class="prize-reveal"><span class="big-num">#${num}</span><div class="reveal-label">Better luck next time</div><div class="no-prize-text">No prize this round — keep hunting! 🐣</div></div>`;
+  } else if (prize.type === 'poem') {
+    let lines = prize.desc.split(/\r\n|\r|\n/);
+    div.innerHTML = `<div class="poem-reveal">
+      <div class="poem-sparkles" id="poem-sparkles"></div>
+      <span class="poem-crown">✨</span>
+      <div class="poem-badge">A poem for you</div>
+      <span class="poem-peep-num">#${num}</span>
+      <div class="poem-divider"></div>
+      <div class="poem-text" id="poem-lines-container"></div>
+    </div>`;
+    let container = el('poem-lines-container');
+    lines.forEach((line, i) => {
+      let span = document.createElement('span');
+      span.className = 'poem-line';
+      span.style.animationDelay = (0.35 + i * 0.18) + 's';
+      span.textContent = line;
+      container.appendChild(span);
+    });
+    launchSparkles();
+  } else {
+    div.innerHTML = `<div class="prize-reveal"><span class="big-num">#${num}</span><div class="reveal-label">You won a prize! 🎉</div><div class="prize-text" id="prize-text-node"></div></div>`;
+    el('prize-text-node').textContent = prize.desc;
+  }
+}
+
+function launchSparkles() {
+  let container = el('poem-sparkles');
+  if (!container) return;
+  let colors = ['#cc44aa','#7744cc','#3a9a50','#3366cc','#e8c820','#e84899','#c8a8ee','#a8e8c0'];
+  for (let i = 0; i < 18; i++) {
+    setTimeout(() => {
+      if (!el('poem-sparkles')) return;
+      let s = document.createElement('div');
+      s.className = 'sparkle';
+      s.style.left = Math.random() * 100 + '%';
+      s.style.top = (40 + Math.random() * 50) + '%';
+      s.style.background = colors[Math.floor(Math.random() * colors.length)];
+      s.style.animationDelay = Math.random() * 0.6 + 's';
+      s.style.width = s.style.height = (4 + Math.random() * 6) + 'px';
+      container.appendChild(s);
+      setTimeout(() => s.remove(), 2500);
+    }, i * 60);
+  }
+}
+
+// ════════════════════════════════════════════════
+// Modals
+// ════════════════════════════════════════════════
+function showNameModal(required) {
+  let existingPlayers = Object.keys(state.winners);
+  let pickerHTML = '';
+  if (existingPlayers.length > 0) {
+    let btns = existingPlayers.map(n =>
+      `<button class="player-pick-btn${n === state.currentWinner ? ' active' : ''}" onclick="selectPlayer('${n.replace(/'/g, "\\'")}')">${n}</button>`
+    ).join('');
+    pickerHTML = `
+      <div class="player-picker">${btns}</div>
+      <div class="player-divider">or enter a new name</div>`;
+  }
+  el('modal-container').innerHTML = `
+    <div class="modal-overlay" onclick="${required ? '' : 'closeModal()'}">
+      <div class="modal" onclick="event.stopPropagation()">
+        <h3>${required ? 'Who\'s playing?' : 'Change player'}</h3>
+        ${pickerHTML}
+        <div class="field">
+          ${existingPlayers.length === 0 ? '<label>Enter your name to start finding peeps</label>' : ''}
+          <input type="text" id="modal-name" placeholder="New player name" onkeydown="if(event.key==='Enter')saveName()">
+        </div>
+        <div id="modal-name-error" class="error"></div>
+        <div class="btn-row">
+          <button class="btn-primary" onclick="saveName()">Let's go 🐣</button>
+          ${!required ? '<button onclick="closeModal()">Cancel</button>' : ''}
+        </div>
+      </div>
+    </div>`;
+  setTimeout(() => { let i = el('modal-name'); if(i) i.focus(); }, 50);
+}
+
+function selectPlayer(name) {
+  state.currentWinner = name;
+  el('player-name-display').textContent = name;
+  el('player-dot').textContent = name.charAt(0).toUpperCase();
+  closeModal();
+}
+
+function saveName() {
+  let name = el('modal-name').value.trim();
+  if (!name) { el('modal-name-error').textContent = 'Please enter a name.'; return; }
+  state.currentWinner = name;
+  if (!state.winners[name]) state.winners[name] = [];
+  el('player-name-display').textContent = name;
+  el('player-dot').textContent = name.charAt(0).toUpperCase();
+  closeModal();
+}
+
+function showExitModal() {
+  el('modal-container').innerHTML = `
+    <div class="modal-overlay" onclick="closeModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <h3>End the game?</h3>
+        <p style="font-family:Arial,sans-serif;font-size:14px;color:var(--text2);margin-bottom:1rem;">This will show the final results.</p>
+        <div class="btn-row">
+          <button class="btn-danger" onclick="exitGame()">End game</button>
+          <button onclick="closeModal()">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function exitGame() {
+  closeModal(); buildSummary(); showScreen('summary-screen');
+}
+
+function showResetModal() {
+  el('modal-container').innerHTML = `
+    <div class="modal-overlay" onclick="closeModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <h3>Reset game?</h3>
+        <p style="font-family:Arial,sans-serif;font-size:14px;color:var(--text2);margin-bottom:1rem;">This will clear all results and return to setup.</p>
+        <div class="btn-row">
+          <button class="btn-primary" onclick="resetGame()">Reset</button>
+          <button onclick="closeModal()">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function resetGame() {
+  closeModal();
+  state = { totalPeeps: 100, prizeMap: {}, claimed: {}, winners: {}, currentWinner: '', prizeCategories: [], hasPoems: false };
+  el('app').style.maxWidth = '';
+  el('total-peeps').value = 100;
+  el('prize-rows').innerHTML = '';
+  el('fill-poems-check').checked = false;
+  el('poem-fill-info').style.display = 'none';
+  el('setup-error').textContent = '';
+  el('save-status').textContent = '';
+  rowId = 0;
+  updateCounter();
+  showScreen('setup-screen');
+}
+
+function closeModal() { el('modal-container').innerHTML = ''; }
+
+// ════════════════════════════════════════════════
+// Summary — consolidated prizes, poems listed out
+// ════════════════════════════════════════════════
+function buildSummary() {
+  let div = el('summary-content');
+  let names = Object.keys(state.winners);
+  if (!names.length) { div.innerHTML = '<p style="color:var(--text2);font-family:Arial,sans-serif;">No prizes were claimed.</p>'; return; }
+
+  // ── Collect per-player stats ──────────────────────────────────────
+  let stats = {}; // name → { cash, prizes: {desc→count}, poemCount, poems: [{num,prize}] }
+  for (let name of names) {
+    stats[name] = { cash: 0, prizes: {}, poemCount: 0, poems: [] };
+    for (let e of state.winners[name]) {
+      if (!e.prize) continue;
+      if (e.prize.type === 'poem') {
+        stats[name].poemCount++;
+        stats[name].poems.push(e);
+      } else {
+        let m = e.prize.desc.match(/\$(\d+(?:\.\d+)?)/);
+        if (m) {
+          stats[name].cash += parseFloat(m[1]);
+        } else {
+          stats[name].prizes[e.prize.desc] = (stats[name].prizes[e.prize.desc] || 0) + 1;
+        }
+      }
+    }
+  }
+
+  // ── Trophy winners per category (ties both get trophy) ───────────
+  function trophyWinners(scores) {
+    let max = Math.max(...Object.values(scores));
+    if (max <= 0) return new Set();
+    return new Set(Object.entries(scores).filter(([, v]) => v === max).map(([k]) => k));
+  }
+  let cashTrophy = trophyWinners(Object.fromEntries(names.map(n => [n, stats[n].cash])));
+  let poemTrophy = trophyWinners(Object.fromEntries(names.map(n => [n, stats[n].poemCount])));
+  let prizeTrophy = {};
+  for (let cat of state.prizeCategories) {
+    if (cat.type === 'prize') {
+      prizeTrophy[cat.desc] = trophyWinners(Object.fromEntries(names.map(n => [n, stats[n].prizes[cat.desc] || 0])));
+    }
+  }
+
+  // ── Widen app for multi-column layout ────────────────────────────
+  let cols = Math.min(names.length, 5);
+  let appWidths = [0, 580, 580, 760, 900, 1040];
+  el('app').style.maxWidth = appWidths[cols] + 'px';
+
+  // ── Build one column per player ───────────────────────────────────
+  let colsHtml = '';
+  for (let name of names) {
+    if (!state.winners[name].length) continue;
+    let s = stats[name];
+    let rows = '';
+
+    for (let cat of state.prizeCategories) {
+      if (cat.type === 'cash') {
+        let val = s.cash;
+        let trophy = cashTrophy.has(name) ? ' 🏆' : '';
+        let display = val === 0 ? '$0' : ('$' + (val % 1 === 0 ? val : val.toFixed(2)));
+        rows += `<div class="summary-stat cash-row${val === 0 ? ' zero' : ''}">
+          <span class="summary-stat-label">Cash</span>
+          <span class="summary-stat-value">${display}${trophy}</span>
+        </div>`;
+      } else if (cat.type === 'prize') {
+        let count = s.prizes[cat.desc] || 0;
+        let trophy = (prizeTrophy[cat.desc] || new Set()).has(name) ? ' 🏆' : '';
+        rows += `<div class="summary-stat${count === 0 ? ' zero' : ''}">
+          <span class="summary-stat-label">${cat.desc}</span>
+          <span class="summary-stat-value">${count}${trophy}</span>
+        </div>`;
+      }
+    }
+
+    if (state.hasPoems) {
+      let count = s.poemCount;
+      let trophy = poemTrophy.has(name) ? ' 🏆' : '';
+      rows += `<div class="summary-stat poem-row${count === 0 ? ' zero' : ''}">
+        <span class="summary-stat-label">Poems</span>
+        <span class="summary-stat-value">${count}${trophy}</span>
+      </div>`;
+    }
+
+    // Poem text cards
+    let poemCards = '';
+    for (let e of s.poems) {
+      let poemDiv = document.createElement('div');
+      poemDiv.className = 'winner-poem';
+      poemDiv.innerHTML = `<div class="winner-poem-label">Poem</div><div class="winner-poem-text"></div><div class="winner-poem-num">Peep #${e.num}</div>`;
+      poemDiv.querySelector('.winner-poem-text').textContent = e.prize.desc;
+      poemCards += poemDiv.outerHTML;
+    }
+
+    colsHtml += `<div class="summary-col">
+      <div class="summary-col-name">${name}</div>
+      ${rows}
+      ${poemCards}
+    </div>`;
+  }
+
+  div.innerHTML = `<div class="summary-grid" style="grid-template-columns:repeat(${cols},1fr)">${colsHtml}</div>`;
+}
+
+// ════════════════════════════════════════════════
+// Export to spreadsheet
+// ════════════════════════════════════════════════
+function saveToSpreadsheet() {
+  let statusEl = el('save-status');
+  statusEl.textContent = '';
+  try {
+    let wb = XLSX.utils.book_new();
+
+    // Summary sheet — one row per winner, consolidated
+    let summaryData = [['Player', 'Prizes Won', 'Poems Won', 'Prize Numbers', 'Poem Numbers']];
+    for (let name of Object.keys(state.winners)) {
+      let entries = state.winners[name];
+      let prizes = entries.filter(e => e.prize && e.prize.type !== 'poem');
+      let poems = entries.filter(e => e.prize && e.prize.type === 'poem');
+
+      let prizeGroups = {};
+      for (let e of prizes) {
+        if (!prizeGroups[e.prize.desc]) prizeGroups[e.prize.desc] = 0;
+        prizeGroups[e.prize.desc]++;
+      }
+      let prizeStr = Object.entries(prizeGroups).map(([d,q]) => q > 1 ? `${q}x ${d}` : d).join(', ');
+      let poemNums = poems.map(e => '#' + e.num).join(', ');
+      let prizeNums = prizes.map(e => '#' + e.num).join(', ');
+
+      summaryData.push([name, prizeStr || 'None', poems.length || 0, prizeNums || 'None', poemNums || 'None']);
+    }
+    let wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    wsSummary['!cols'] = [{wch:20},{wch:40},{wch:12},{wch:30},{wch:30}];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Results Summary');
+
+    // Detail sheet — one row per prize claimed
+    let detailData = [['Player', 'Peep #', 'Prize Type', 'Prize / Poem']];
+    for (let name of Object.keys(state.winners)) {
+      for (let e of state.winners[name]) {
+        detailData.push([name, e.num, e.prize ? e.prize.type : 'none', e.prize ? e.prize.desc : 'No prize']);
+      }
+    }
+    let wsDetail = XLSX.utils.aoa_to_sheet(detailData);
+    wsDetail['!cols'] = [{wch:20},{wch:10},{wch:10},{wch:60}];
+    XLSX.utils.book_append_sheet(wb, wsDetail, 'Results Detail');
+
+    XLSX.writeFile(wb, 'peep-hunt-results.xlsx');
+    statusEl.innerHTML = '<span style="color:var(--green);">Saved! peep-hunt-results.xlsx downloaded.</span>';
+  } catch(err) {
+    statusEl.innerHTML = `<span style="color:var(--red);">Save failed: ${err.message}</span>`;
+  }
+}
+
+function clearPrizes() {
+  el('prize-rows').innerHTML = '';
+  el('fill-poems-check').checked = false;
+  rowId = 0;
+  addPrizeRow();
+  updateCounter();
+}
+
+// Init
+addPrizeRow();
+updateCounter();
+</script>
+</body>
+</html>
